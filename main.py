@@ -4,29 +4,36 @@ import uvicorn
 import firebase_admin
 from firebase_admin import credentials, firestore
 from firebase_admin.firestore import firestore as fs
+import os
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
-# Initialize the app with a service account, granting admin privileges
-cred = credentials.Certificate('wappsender-key.json')
-firebase_admin.initialize_app(cred)
 
+# Load the service account key from the environment variable
+service_account_info = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
 
+if service_account_info:
+    cred = credentials.Certificate(json.loads(service_account_info))
+    firebase_admin.initialize_app(cred)
+else:
+    raise ValueError("No service account info found in environment variable.")
 
 db = firestore.client()
-
 
 @app.post("/")
 async def receive_webhook(request: Request):
     # Determine the content type
     content_type = request.headers.get('Content-Type')
-    
+
     if content_type == 'application/json':
         data = await request.json()
         db.collection('WappSender').document('message-ids').update({
             'ids': fs.ArrayUnion([data['data']['id']])
         })
         return JSONResponse(content={"message": "JSON received"})
-
     else:
         return PlainTextResponse(content="Unsupported content type", status_code=415)
 
