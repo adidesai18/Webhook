@@ -35,7 +35,7 @@ async def receive_webhook(request: Request):
         })
         return JSONResponse(content={"message": "JSON received"})
     else:
-        return PlainTextResponse(content="Unsupported content type", status_code=415)
+        return JSONResponse(content={"message": "Unsupported content type"})
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
